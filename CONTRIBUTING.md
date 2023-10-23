@@ -1,9 +1,9 @@
 # CONTRIBUTING
 
 ## How to build docker image
-
+docker build -t flask-smorest-api .
 
 ## How to run Docker locally
 '''
-docker run -dp 5000:5000 -w /app -v "$(pwd):/app" firs_api sh -c "flask run --host 0.0.0.0"
+docker run -dp 5000:5000 -w /app -v "$(pwd):/app" flask-smorest-api sh -c "flask run --host 0.0.0.0"
 '''
