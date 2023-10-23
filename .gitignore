@@ -1,6 +1,6 @@
 .venv
 __pycach__
-./instance
+instance
 *.pyc
 .DS_Store
 
