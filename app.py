@@ -4,6 +4,7 @@ from flask_smorest import Api
 from flask_jwt_extended import JWTManager
 from sqlalchemy.orm import identity
 from flask_migrate import Migrate, migrate
+from dotenv import load_dotenv
 
 from db import db
 import models
@@ -21,6 +22,8 @@ def create_app(db_url=None):
     """
 
     app = Flask(__name__)
+    load_dotenv()
+
 
     app.config["PROPAGATE_EXCEPTIONS"] = True
     app.config["API_TITLE"] = "Stores Rest api"
@@ -31,7 +34,7 @@ def create_app(db_url=None):
     app.config[
         "OPENAPI_SWAGGER_UI_URL"
     ] = "https://cdn.jsdelivr.net/npm/swagger-ui-dist/"
-    app.config["SQLALCHEMY_DATABASE_URI"] = db_url or "sqlite:///data.db"
+    app.config["SQLALCHEMY_DATABASE_URI"] = db_url or os.getenv("DATABASE_URL", "sqlite:///data.db")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["PROPAGATE_EXCEPTIONS"] = True
     db.init_app(app)
