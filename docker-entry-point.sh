@@ -1,4 +1,6 @@
 #!/bin/sh
+# name: docker-entry-point
+# Description: Runs when container sterts
 
 # Run database migration
 flask db upgrade
