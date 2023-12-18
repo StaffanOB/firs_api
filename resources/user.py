@@ -2,6 +2,7 @@ import requests, os
 from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from passlib.hash import pbkdf2_sha256
+from sqlalchemy import or_
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
@@ -12,7 +13,7 @@ from flask_jwt_extended import (
 
 from db import db
 from models import UserModel
-from schemas import UserSchema
+from schemas import UserSchema, UserRegisterSchema
 from blocklist import BLOCKLIST
 
 blp = Blueprint("Users", "users", description="Operations on users")
@@ -24,8 +25,8 @@ def send_simple_message(to, subject, body):
 
     return requests.post(
         f"https://api.mailgun.net/v3/{domain}/messages",
-        auth=("api", "YOUR_API_KEY"),
-        data={"from": "LibAPI <mailgun@{domail}>",
+        auth=("api", os.getenv("MAILGUN_API_KEY")),
+        data={"from": f"LibAPI <mailgun@{domain}>",
         "to": [to], "subject": subject, "text": body})
 
 @blp.route("/register")
@@ -33,7 +34,7 @@ class UserRegister(MethodView):
     """
     Register new users
     """
-    @blp.arguments(UserSchema)
+    @blp.arguments(UserRegisterSchema)
     def post(self, user_data):
         """
         Regiser a new user and add it to the database
@@ -48,15 +49,27 @@ class UserRegister(MethodView):
         # TODO: <20-10-23, sob> #
                 * Change password hash to bcrypt hash
         """
-        if UserModel.query.filter(UserModel.username == user_data["username"]).first():
+        if UserModel.query.filter(
+            or_(
+                UserModel.username == user_data["username"],
+                UserModel.email == user_data["email"]
+                )).first():
             abort(410, message=f"A user with that username ({user_data['username']}) already exists.")
 
         user = UserModel(
             username=user_data["username"],
+            email=user_data["email"],
             password=pbkdf2_sha256.hash(user_data["password"]),
         )
         db.session.add(user)
         db.session.commit()
+
+        # Send register email
+        send_simple_message(
+            to=user.email,
+            subject="Successfully signed up",
+            body=f"Hi {user.username}! You have successfully signed up to the LibAPI."
+            )
 
         return {"message": "User created successfully."}, 201
 
