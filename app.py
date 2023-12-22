@@ -1,10 +1,13 @@
 import os
+import redis
+
 from flask import Flask, jsonify
 from flask_smorest import Api
 from flask_jwt_extended import JWTManager
 from sqlalchemy.orm import identity
 from flask_migrate import Migrate, migrate
 from dotenv import load_dotenv
+from rq import Queue
 
 from db import db
 import models
@@ -24,7 +27,11 @@ def create_app(db_url=None):
     app = Flask(__name__)
     load_dotenv()
 
+    redis_connection = redis.from_url(
+        os.getenv("REDIS_URL")
+        )
 
+    app.queue = Queue("emails", connection=redis_connection)
     app.config["PROPAGATE_EXCEPTIONS"] = True
     app.config["API_TITLE"] = "Stores Rest api"
     app.config["API_VERSION"] = "v1"
