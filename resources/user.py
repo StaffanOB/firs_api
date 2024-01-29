@@ -4,6 +4,7 @@ from flask.views import MethodView
 from flask_smorest import Blueprint, abort
 from passlib.hash import pbkdf2_sha256
 from sqlalchemy import or_
+from sqlalchemy.exc import SQLAlchemyError
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
@@ -52,7 +53,7 @@ class UserRegister(MethodView):
         user = UserModel(
             username=user_data["username"],
             email=user_data["email"],
-            password=pbkdf2_sha256.hash(user_data["password"]),
+            password=pbkdf2_sha256.hash(user_data["password"])
         )
         db.session.add(user)
         db.session.commit()
@@ -144,3 +145,29 @@ class User(MethodView):
         db.session.commit()
 
         return {"message": "User was deleted"}
+
+
+# TODO: Remove all users that dont start with test
+@blp.route("/users")
+class ListUsers(MethodView):
+    """ Lists all test user on the system """
+    @blp.response(200, UserSchema(many=True))
+    def get(self):
+        test_user_list = [test_user for test_user in UserModel.query.all() if str(test_user.username).startswith("test_") ]
+        #test_user_list = [test_user for test_user in UserModel.query.all() if str(test_user.username).startswith("") ]
+        return test_user_list
+
+    #@jwt_required(fresh=True)
+    @blp.arguments(UserSchema)
+    @blp.response(201, UserSchema)
+
+    def post(self, user_data):
+        user = UserSchema(**user_data)
+
+        try:
+            db.session.add(user)
+            db.session.commit()
+        except SQLAlchemyError:
+            abort(500, message="An error occured while inserting in to users")
+
+        return user
